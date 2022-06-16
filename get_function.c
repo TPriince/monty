@@ -1,95 +1,64 @@
 #include "monty.h"
-#include "lists.h"
 
 /**
- * get_func - selects the right function
- * @parsed: line from the bytecode file passed to main
- *
- * Return: pointer to the selected function, or NULL on failure
- */
-void (*get_func(char **parsed))(stack_t **, unsigned int)
+  * get_op_func - searches and matches text to opcode
+  * then returns corresponding function.
+  * @line: struct containing line content and number.
+  * @meta: struct containing all allocated memory.
+  *
+  * Return: pointer to relevant function.
+  */
+void (*get_op_func(line_t line, meta_t *meta))(stack_t **, unsigned int)
 {
-	instruction_t func_arr[] = {
-		{"push", push_handler},
-		{"pall", pall_handler},
-		{"pint", pint_handler},
-		{"pop", pop_handler},
-		{"swap", swap_handler},
-		{"add", add_handler},
-		{"nop", nop_handler},
-		{"sub", sub_handler},
-		{"div", div_handler},
-		{"mul", mul_handler},
-		{"mod", mod_handler},
-		{"pchar", pchar_handler},
-		{"pstr", pstr_handler},
-		{"rotl", rotl_handler},
-		{"rotr", rotr_handler},
-		{"stack", stack_handler},
-		{"queue", queue_handler},
+	unsigned int i = 0;
+	instruction_t ops[] = {
+		{"push", push},
+		{"pall", pall},
+		{"pint", pint},
+		{"pop", pop},
+		{"swap", swap},
+		{"add", addop},
+		{"sub", subop},
+		{"mul", mulop},
+		{"div", divop},
+		{"mod", modop},
+		{"nop", nop},
+		{"pchar", pchar},
+		{"pstr", pstr},
+		{"rotl", rotlop},
+		{"rotr", rotrop},
+		{"stack", addst},
+		{"queue", addqu},
 		{NULL, NULL}
 	};
 
-	int codes = 17, i;
+	if (comment_check(line))
+		return (nop);
 
-	for (i = 0; i < codes; i++)
+	while (ops[i].opcode)
 	{
-		if (strcmp(func_arr[i].opcode, parsed[0]) == 0)
+		if (strcmp(ops[i].opcode, line.content[0]) == 0)
 		{
-			return (func_arr[i].f);
+			push_check(line, meta, ops[i].opcode);
+			if (arg.flag == 1 && strcmp(ops[i].opcode, "push") == 0)
+			{
+				if (line.content)
+					free(line.content);
+				return (qpush);
+			}
+			free(line.content);
+			return (ops[i].f);
 		}
-	}
-	return (NULL);
-}
 
-/**
- * push_handler - handles the push instruction
- * @stack: double pointer to the stack to push to
- * @line_number: number of the line in the file
- */
-void push_handler(stack_t **stack, unsigned int line_number)
-{
-	stack_t *new;
-	int num = 0, i;
-
-	if (data.words[1] == NULL)
-	{
-		dprintf(STDERR_FILENO, PUSH_FAIL, line_number);
-		free_all(1);
-		exit(EXIT_FAILURE);
+		i++;
 	}
 
-	for (i = 0; data.words[1][i]; i++)
-	{
-		if (isalpha(data.words[1][i]) != 0)
-		{
-			dprintf(STDERR_FILENO, PUSH_FAIL, line_number);
-			free_all(1);
-			exit(EXIT_FAILURE);
-		}
-	}
-	num = atoi(data.words[1]);
-
-	if (data.qflag == 0)
-		new = add_dnodeint(stack, num);
-	else if (data.qflag == 1)
-		new = add_dnodeint_end(stack, num);
-	if (!new)
-	{
-		dprintf(STDERR_FILENO, MALLOC_FAIL);
-		free_all(1);
-		exit(EXIT_FAILURE);
-	}
-}
-
-/**
- * pall_handler - handles the pall instruction
- * @stack: double pointer to the stack to push to
- * @line_number: number of the line in the file
- */
-void pall_handler(stack_t **stack, unsigned int line_number)
-{
-	(void)line_number;
-	if (*stack)
-		print_dlistint(*stack);
+	fprintf(stderr, "L%d: unknown instruction %s\n",
+			line.number, line.content[0]);
+	free(line.content);
+	free(meta->buf);
+	free_stack(&(meta->stack));
+	fclose(meta->file);
+	free(meta);
+	exit(EXIT_FAILURE);
 }
