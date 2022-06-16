@@ -93,7 +93,7 @@ extern data_t data;
 #define PCHAR_FAIL "L%u: can't pchar, stack empty\n"
 #define PCHAR_RANGE "L%u: can't pchar, value out of range\n"
 
-/* main.c */
+/* monty.c */
 void monty(args_t *args);
 
 /* get_func.c */
